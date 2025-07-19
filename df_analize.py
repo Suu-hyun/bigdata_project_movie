@@ -56,77 +56,96 @@
 # genre_avg.to_excel('genre_avg_score_by_critic_audience.xlsx', index=False)
 
 # --------------------------------------- 워드 클라우드 ------------------------------------------------
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# from wordcloud import WordCloud, STOPWORDS
-# from konlpy.tag import Okt
-# import re
-#
-# # 1. 데이터 불러오기
-# df = pd.read_excel('movie_review_cleaned.xlsx')
-#
-# # 2. 불용어 설정 (필요한 단어는 여기에 추가)
-# additional_stopwords = {
-#     '영화', '감독', '배우', '장면', '스토리', '결말', '배경', '음악', '연기', '이제', '쿠키', '진짜', '그냥', '서준이', '감동'
-#     '캐릭터', '씬', '사람', '내용', '장르', '평점', '관객', '평론가', '장소', '봉준호', '차라리', '액션', '이순신', '최민식', '시리즈',
-#     '기대', '생각', '부분', '이야기', '때문', '것', '정도', '중간', '또한', '마블', '픽사', '정말', '윤계상', '마동석', '캐스팅',
-#     '같은', '아주', '조금', '전체', '이런', '이것', '저것', '수준', '이다', '하다', '박서준', '형님', '스타', '액션 영화', '원빈'
-# }
-# stopwords = STOPWORDS.union(additional_stopwords)
-#
-# okt = Okt()
-#
-# # 3. 전처리 함수 (명사만 뽑고 불용어 제거)
-# def preprocess_text(text):
-#     if not isinstance(text, str):
-#         return ''
-#     text = re.sub(r'[^가-힣\s]', '', text)
-#     morphs = okt.pos(text, stem=True)
-#     tokens = [word for word, pos in morphs if pos == 'Noun']
-#     tokens = [word for word in tokens if word not in stopwords and len(word) > 1]
-#     return ' '.join(tokens)
-#
-# # 4. cleaned_review 컬럼 새로 만들기 (전처리 적용)
-# df['cleaned_review'] = df['리뷰'].apply(preprocess_text)
-#
-# import matplotlib.font_manager as fm
-# import matplotlib.pyplot as plt
-#
-# # 한글 폰트 경로 지정
-# font_path = 'C:/Windows/Fonts/malgun.ttf'
-# font_prop = fm.FontProperties(fname=font_path).get_name()
-#
-# plt.rc('font', family=font_prop)
-# plt.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
-#
-#
-# # 5. 영화별, 구분별 워드클라우드 생성 함수
-# def generate_wordcloud(data, title):
-#     text = ' '.join(data.dropna())
-#     if not text.strip():
-#         print(f"{title} 리뷰 텍스트가 부족합니다.")
-#         return
-#     wc = WordCloud(
-#         font_path='C:/Windows/Fonts/malgun.ttf',
-#         width=800,
-#         height=600,
-#         background_color='white',
-#         max_words=100,
-#         stopwords=stopwords
-#     ).generate(text)
-#
-#     plt.figure(figsize=(10, 8))
-#     plt.imshow(wc, interpolation='bilinear')
-#     plt.axis('off')
-#     plt.title(title)
-#     plt.show()
-#
-# # 6. 영화별, 평론가/관람객 분리해서 워드클라우드 출력
-# movies = df['영화제목'].unique()
-# for movie in movies:
-#     for group in ['평론가', '관람객']:
-#         subset = df[(df['영화제목'] == movie) & (df['구분'] == group)]
-#         generate_wordcloud(subset['cleaned_review'], f"{movie} - {group} 워드클라우드")
+import pandas as pd
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud, STOPWORDS
+from konlpy.tag import Okt
+import re
+
+# 1. 데이터 불러오기
+df = pd.read_excel('movie_review_cleaned.xlsx')
+
+# 2. 불용어 설정 (필요한 단어는 여기에 추가)
+additional_stopwords = {
+    '영화', '감독', '배우', '장면', '스토리', '결말', '배경', '음악', '연기', '이제', '쿠키', '진짜', '그냥',
+    '서준이', '감동', '캐릭터', '씬', '사람', '내용', '장르', '평점', '관객', '평론가', '장소', '봉준호', '차라리',
+    '액션', '이순신', '최민식', '시리즈', '기대', '생각', '부분', '이야기', '때문', '것', '정도', '중간', '또한',
+    '마블', '픽사', '정말', '윤계상', '마동석', '캐스팅', '같은', '아주', '조금', '전체', '이런', '이것', '저것',
+    '수준', '이다', '하다', '박서준', '형님', '스타', '액션 영화', '원빈', '한국', '강동원', '김윤석', '시대',
+    '트럼프', '디즈니', '뮤지컬', '노래', '기생충', '송강호', '히어로', '캡틴', '빌런', '파트', '티모시', '영화관',
+    '아이맥스', '애니', '투슬 리스(투슬리스)', '디카프리오', '레버넌트', '해전', '완전', '이순신장군', '마블리',
+    '조선족', '라이트', '베이비', '프랜차이즈', '자동차', '과학', '역시', '질문', '작품', '속편', '전작', '하나',
+    '이번', '순간', '의미', '오늘', '판타지', '가장', '웹툰', '원작', '김용화', '아저씨', '다시', '보고', '몇번',
+    '지니', '기술', '자스민', '알라딘', '윌스미스', '아이', '미국', '대한', '어스', '조던', '아웃', '겟아웃', '원소',
+    '엘리', '우리', '서로', '이드', '컬래버', '세이건', '크게', '년대', '익스펜더블', '아놀드', '왕년', '출연', '대박',
+    '브루스', '모든', '놀란', '인간', '호아킨 피닉스', '토드 필립스', '조커', '코미디', '배트맨', '호아킨', '히스 레저',
+    '파라', '공포 영화', '알바', '카메론', '제임스', '반드시', '블록버스터', '후의', '타이타닉', '명작', '재개', '봉하',
+    '광주', '연출', '토마스', '로봇', '변신', '분명', '소년', '합체', '상영', '시간', '옵티머스', '마이클 베이',
+    '범블비', '마무리', '잠시', '반지 제왕', '호빗', '전투', '박소', '소담', '동안', '화보', '라푼젤', '동화', '다른', '화룡', '장담', '엘사', '애니메이션', '계획', '무엇', '월드', '확장', '지점', '설국열차', '김기영', '입안',
+'내내', '미즈', '모니카', '노스', '브리', '라슨', '마블스', '자주', '구스', '캡틴마블', '느낌', '고양이', '사막', '샬라메', '드니 빌뇌브', '상미', '극장', '영상',
+'처음', '실사', '화의', '투슬 리스', '투스리스', '루베', '오스카', '엠마누엘', '레오', '해상', '신의', '장군', '한번', '올해', '범죄', '베테', '꿀잼', '드라이버',
+'거의', '에드가', '운전', '분노', '질주', '우주', '다음', '정체', '빌뇌브', '독자', '전편', '후속작', '이해', '닥터', '피트', '뮤직', '지금', '태식', '흐름', '옆집', '이영화',
+'이정범', '번은', '우리나라', '액션영화', '개봉', '상미', '공주', '알라딘', '공포', '여러', '오직', '게다가', '얼마나', '공포영화', '다른', '엠버', '멘탈', '제발', '웨이드', '눈물',
+'혼자', '전설', '자리', '이연걸', '실베스터', '스트레스', '피닉스', '토드 필립스', '공포영화', '컨저링', '개봉', '로즈', '극장', '언제', '외부', '피터', '택시운전사',
+'트랜스포머', '메간폭스', '마이클', '반지의제왕', '만큼', '드라마', '더빙', '안나', '리산알 가입', '리산 가입', '투슬 리스', '슈퍼히어로', '오프닝', '하드캐리', '마지막',
+'농담', '강추', '가족영화', '이건', '인터스텔라', '토드', '필립스', '토드 필립스', '토드필립스', '택시 운전사', '대한민국', '고민', '패자',
+'장료', '러싼', '여기', '마지막', '폴른', '미군', '베이', '마지막', '레골라스', '추천', '면서', '돼지', '호러영화', '로서', '알리', '반지하', '드니', '동시', '엑소시스트'
+}
+stopwords = STOPWORDS.union(additional_stopwords)
+
+okt = Okt()
+
+# 3. 전처리 함수 (명사만 뽑고 불용어 제거)
+def preprocess_text(text):
+    if not isinstance(text, str):
+        return ''
+    text = re.sub(r'[^가-힣\s]', '', text)
+    morphs = okt.pos(text, stem=True)
+    tokens = [word for word, pos in morphs if pos == 'Noun']
+    tokens = [word for word in tokens if word not in stopwords and len(word) > 1]
+    return ' '.join(tokens)
+
+# 4. cleaned_review 컬럼 새로 만들기 (전처리 적용)
+df['cleaned_review'] = df['리뷰'].apply(preprocess_text)
+
+import matplotlib.font_manager as fm
+import matplotlib.pyplot as plt
+
+# 한글 폰트 경로 지정
+font_path = 'C:/Windows/Fonts/malgun.ttf'
+font_prop = fm.FontProperties(fname=font_path).get_name()
+
+plt.rc('font', family=font_prop)
+plt.rcParams['axes.unicode_minus'] = False  # 마이너스 깨짐 방지
+
+
+# 5. 영화별, 구분별 워드클라우드 생성 함수
+def generate_wordcloud(data, title):
+    text = ' '.join(data.dropna())
+    if not text.strip():
+        print(f"{title} 리뷰 텍스트가 부족합니다.")
+        return
+    wc = WordCloud(
+        font_path='C:/Windows/Fonts/malgun.ttf',
+        width=800,
+        height=600,
+        background_color='white',
+        max_words=100,
+        stopwords=stopwords
+    ).generate(text)
+
+    plt.figure(figsize=(10, 8))
+    plt.imshow(wc, interpolation='bilinear')
+    plt.axis('off')
+    plt.title(title)
+    plt.show()
+
+# 6. 영화별, 평론가/관람객 분리해서 워드클라우드 출력
+movies = df['영화제목'].unique()
+for movie in movies:
+    for group in ['평론가', '관람객']:
+        subset = df[(df['영화제목'] == movie) & (df['구분'] == group)]
+        generate_wordcloud(subset['cleaned_review'], f"{movie} - {group} 워드클라우드")
 
 # -------------------------- 가설 1 확인(t-검정) ---------------------------------
 # import pandas as pd
@@ -196,7 +215,7 @@
 # plt.tight_layout()
 # plt.show()
 # -------------------------------- 가설 2(괴리 분석) ---------------------------------
-# import pandas as pd
+import pandas as pd
 # import re
 # from scipy.stats import kruskal
 # import matplotlib.pyplot as plt
@@ -265,34 +284,3 @@
 #     plt.tight_layout()
 #     plt.show()
 
-# -------------------------------- 가설 3 -------------------------------------
-# import pandas as pd
-# from scipy.stats import pearsonr
-# import matplotlib.pyplot as plt
-#
-# # 1. 데이터 불러오기
-# movie_avg = pd.read_excel('movie_avg_score_by_critic_audience.xlsx')
-#
-# # (가정) 흥행 지표가 포함된 파일이라면
-# # 예: '관객수'라는 컬럼이 있다고 가정
-# # 만약 없다면 영화별 흥행 지표 데이터 합치기 필요
-#
-# # 2. 점수 괴리 계산
-# movie_avg['점수 괴리'] = (movie_avg['평론가 평균'] - movie_avg['관람객 평균']).abs()
-#
-# # 3. 결측치 제거 (평점이나 흥행지표 없는 경우 제외)
-# movie_avg = movie_avg.dropna(subset=['점수 괴리', '흥행지표'])
-#
-# # 4. 상관관계 계산 (피어슨)
-# corr, p_value = pearsonr(movie_avg['점수 괴리'], movie_avg['흥행지표'])
-#
-# print(f"평론가-관람객 점수 괴리와 흥행지표 간 피어슨 상관계수: {corr:.4f}, p-value: {p_value:.4f}")
-#
-# # 5. 산점도 시각화
-# plt.figure(figsize=(8,6))
-# plt.scatter(movie_avg['점수 괴리'], movie_avg['흥행지표'])
-# plt.xlabel('평론가-관람객 점수 괴리')
-# plt.ylabel('흥행지표 (예: 관객수)')
-# plt.title('점수 괴리와 흥행 간 상관관계')
-# plt.grid(True)
-# plt.show()
